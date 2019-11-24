@@ -25,11 +25,14 @@ enum Speed {
     fast = 2
 };
 
-enum EntityType {ship, barrel};
+enum EntityType {ship, barrel, mine, cannonball};
 
 struct Coord {
     int x = 0; 
     int y = 0;
+
+    pair<int,int> evenNeighbor[6] = {{1, 0}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}};
+    pair<int,int> oddNeighbor[6] = {{1, 0}, {1, -1}, {0, -1}, {-1, 0}, {0, 1}, {1, 1}};
 
     Coord() {
         x = y = 0;
@@ -43,6 +46,31 @@ struct Coord {
     Coord(const Coord &coord) {
         x = coord.x;
         y = coord.y;
+    }
+
+    bool isEvenRow() {
+        return !(x&1);
+    } 
+
+    bool isValid() {
+        return (x>-1 && x<X && y<Y && y>-1);
+    }
+
+    Coord getNeighbor(Orientation orientation) {
+        switch(isEvenRow()) {
+            case true: {
+                int dx = evenNeighbor[orientation].first;
+                int dy = evenNeighbor[orientation].second;
+                return Coord(x + dx, y + dy);
+                break;
+            }
+            case false: { 
+                int dx = oddNeighbor[orientation].first;
+                int dy = oddNeighbor[orientation].second;
+                return Coord(x + dx, y + dy);
+                break;
+            }
+        }
     }
 };
 
@@ -91,8 +119,26 @@ class Barrel: public Entity {
     }
 };
 
+class Mine: public Entity {
+    public: 
+    Mine(int entityId, Coord coord): Entity(entityId, EntityType::mine, coord) {}
+};
+
+class Cannonball: public Entity {
+    public:
+    int remainingTours;
+    int shipId; 
+
+    Cannonball(int entityId, Coord coord, int remainingTours, int shipId): Entity(entityId, EntityType::cannonball, coord) {
+        this -> remainingTours = remainingTours;
+        this -> shipId = shipId;
+    }
+};
+
 vector<Barrel> barrels;
 vector<Ship> myShips, ennemieShips;
+vector<Mine> mines;
+vector<Cannonball> cannonballs;
 
 double getDistance(Entity a, Entity b) {
     return abs(a.coord.x-b.coord.x) + abs(a.coord.y - b.coord.y);
@@ -129,6 +175,8 @@ int main()
         myShips.clear();
         barrels.clear();
         ennemieShips.clear();
+        mines.clear();
+        cannonballs.clear();
         int myShipCount; // the number of remaining ships
         cin >> myShipCount; cin.ignore();
         int entityCount; // the number of entities (e.g. ships, mines or cannonballs)
@@ -151,9 +199,13 @@ int main()
                 } else {
                     ennemieShips.push_back(Ship(entityId, (Orientation)arg1, Coord(x, y), (Speed)arg2, arg3));
                 }
-            } else {
+            } else if(entityType == "BARREL") {
                 barrels.push_back(Barrel(entityId, Coord(x, y), arg1));
-            }
+            } else if(entityType == "MINE") {
+                mines.push_back(Mine(entityId, Coord(x, y)));
+            } else if(entityType == "CANNONBALL") {
+                cannonballs.push_back(Cannonball(entityId, Coord(x, y), arg2, arg1));
+            } else return -1;
         }
         for (int i = 0; i < myShipCount; i++) {
 
