@@ -19,6 +19,10 @@ enum Orientation {
     forwardRight = 5
 };
 
+Orientation getOppositeOrientation(Orientation orientation) {
+    return Orientation((orientation + 3) % 6);
+}
+
 enum Speed {
     stop = 0,
     normal = 1,
@@ -145,28 +149,50 @@ double getDistance(Entity a, Entity b) {
 }
 
 Barrel getNearestBarrel(Ship ship) {
-    if(barrels.empty()) return Barrel(0, Coord(ship.coord.x, ship.coord.y), 0);
+    if(barrels.empty()) return Barrel(0, Coord(rand() % 21, rand() % 23), 0);
     Barrel nearestBarrel = barrels[0];
-    int minDist = X + Y;
+    Barrel nearestBarrel10 = barrels[0];
+    Barrel nearestBarrel20 = barrels[0];
+    int minDist(X + Y);
+    int minDist10(X + Y);
+    int minDist20(X + Y);
     for(auto barrel: barrels) {
         int distance = getDistance(ship, barrel);
-        if((distance < minDist) && !barrel.visited) {
-            minDist = distance;
-            nearestBarrel = barrel;
-        } else if(distance == minDist) {
-            if(barrel.size > nearestBarrel.size) {
-                nearestBarrel = barrel; 
-            }
+        if(distance > (ship.stockLevel * ship.speed)) 
+            continue;
+        
+        if(barrel.size == 10) {
+            if((distance < minDist10) && !barrel.visited) {
+                minDist10 = distance;
+                nearestBarrel10 = barrel;
+            } 
+        }
+
+        if(barrel.size == 20) {
+            if((distance < minDist20) && !barrel.visited) {
+                minDist20 = distance;
+                nearestBarrel20 = barrel;
+            } 
+        }
+        
+        if((minDist10 + 5) < minDist20) {
+            nearestBarrel = nearestBarrel10;
+            minDist = minDist10;
+        } else {
+            nearestBarrel = nearestBarrel20;
+            minDist = minDist20;
         }
     }
+
     if(minDist == 0)
         nearestBarrel.visit();
     return nearestBarrel;
 }
 
-
-
-
+// Store barrels in Hashmap.
+// Preprocessing: Build path from each (x,y) to each barrel avoiding mines.
+// Update getNearestBarrel accordingly.
+// If the ship is stuck with the ennemie than go in the opposite direction
 int main()
 {
 
@@ -174,7 +200,7 @@ int main()
     while (1) {
         myShips.clear();
         barrels.clear();
-        ennemieShips.clear();
+        ennemieShips.clear() ;
         mines.clear();
         cannonballs.clear();
         int myShipCount; // the number of remaining ships
